@@ -31,7 +31,6 @@ venv/
 ENV/
 
 # User-specific stuff:
-.idea
 .idea/**/*.iml
 .idea/**/misc.xml
 .idea/**/modules.xml
