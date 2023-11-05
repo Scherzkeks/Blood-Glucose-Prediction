@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import tensorflow as tf
 from tensorflow import keras
 from keras.models import Sequential, load_model
 from keras.layers import LSTM, Dense, Dropout
@@ -101,7 +102,7 @@ optimizer = Adam(
 rnn_model.compile(
     optimizer=optimizer,
     loss="mean_squared_error",
-    metrics=[keras.metrics.MeanSquaredError(), keras.metrics.Recall()]
+    metrics=[]
     )
 
 cp_path = "./trained/model"
@@ -117,10 +118,10 @@ checkpoint = ModelCheckpoint(
 
 # adaptable learning rate
 def scheduler(epoch):
-    if epoch < 10:  # Gradually decrease for the first 10 epochs
-        return 1e-4 / (10 * (epoch*2+1))
+    if epoch < 20:  # Gradually decrease for the first 10 epochs
+        return 1e-2 / (10 * (epoch/2+1))
     else:
-        return 1e-10
+        return 1e-4
 
 
 lr_scheduler = LearningRateScheduler(scheduler)
@@ -139,19 +140,6 @@ h = rnn_model.fit(
 with open('./trained/history.txt', 'w') as f:
     f.write(str(h.history))
     f.close()
-
-# Plot Mean squared error across epochs and interpret it
-plt.figure()
-plt.plot(h.history['mse'])
-plt.plot(h.history['val_mse'])
-plt.title('Model MSE')
-plt.xlabel('Epoch')
-plt.xlim(-0.5, epochs-0.5)
-plt.xticks(range(0, epochs), np.linspace(1, epochs, epochs, dtype=int))
-plt.ylabel('MSE')
-plt.legend(['train', 'test'], loc='upper left')
-# plt.show()
-plt.savefig('./trained/mse_plot.png')
 
 # Plot loss across epochs and interpret it
 plt.figure()
@@ -174,10 +162,10 @@ rnn_model = load_model(
     )
 
 # Evaluate the model using MSE and MAE
-mse, mae = rnn_model.evaluate(X_test, Y_test)
+mse = rnn_model.evaluate(X_test, Y_test)
 
 with open('trained/evaluation.txt', 'w') as f:
     f.write(f'Mean Squared Error (MSE): {mse:.4f}\n')
-    f.write(f'Mean Absolute Error (MAE): {mae:.4f}\n')
     f.close()
 
+# TODO: visualization of predicted values compared to true values to check the validity
