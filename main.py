@@ -82,7 +82,7 @@ rnn_model.add(LSTM(50, return_sequences=True, input_shape=(k, 1)))
 rnn_model.add(LSTM(50, return_sequences=True))
 rnn_model.add(LSTM(50))
 rnn_model.add(Dropout(0.2))
-rnn_model.add(Dense(1, activation='sigmoid'))
+rnn_model.add(Dense(1, activation='linear'))
 
 # Optimizer
 optimizer = Adam(

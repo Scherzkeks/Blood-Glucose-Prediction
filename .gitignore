@@ -42,3 +42,4 @@ ENV/
 
 # Project specific
 *.pdf
+/trained/model
