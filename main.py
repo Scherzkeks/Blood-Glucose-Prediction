@@ -11,7 +11,6 @@ from keras.optimizers import Adam
 
 # -------------------- Coding ------------------------------------------------------------------------------------------
 
-
 visu = False  # Visualization of Data ON/OFF
 
 # Load Data
@@ -58,25 +57,24 @@ if visu:
         plt.title('CBG over Time'+str(i))
     plt.show()
 
-combined_train_data = pd.concat(train_data)
-combined_test_data = pd.concat(test_data)
-
-k = 10  # Number of past BG values
+k = 100  # Number of past BG values
 PH = 5  # Prediction horizon
 
 
 # Prepare sequences for the RNN model
-def sequences(data, k, PH):
+def sequences(patient, k, PH):
     X = []
     Y = []
-    for i in range(len(data) - k - PH + 1):
-        X.append(data[i:i + k])  # Input: 'k' BG values
-        Y.append(data[i+k + PH - 1])
+    for j in range(len(patient)):
+        for i in range(len(patient[j]) - k - PH + 1):
+            if max(patient[j]['missing_cbg'].values[i:i+k]) == 0:
+                X.append(patient[j]['cbg'].values[i:i+k])  # Input: 'k' BG values
+                Y.append(patient[j]['cbg'].values[i+k + PH - 1])
     return [np.array(X), np.array(Y)]
 
 
-X_train, Y_train = sequences(combined_train_data['cbg'].values, k, PH)
-X_test, Y_test = sequences(combined_test_data['cbg'].values, k, PH)
+X_train, Y_train = sequences(train_data, k, PH)
+X_test, Y_test = sequences(test_data, k, PH)
 
 # Creating the RNN model
 rnn_model = Sequential()
