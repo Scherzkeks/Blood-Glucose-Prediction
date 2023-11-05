@@ -62,27 +62,33 @@ PH = 5  # Prediction horizon
 
 
 # Prepare sequences for the RNN model
-def sequences(patient, k, PH):
+def sequences(patient_data, window, horizon):
     X = []
     Y = []
-    for j in range(len(patient)):
-        for i in range(len(patient[j]) - k - PH + 1):
-            if max(patient[j]['missing_cbg'].values[i:i+k]) == 0:
-                X.append(patient[j]['cbg'].values[i:i+k])  # Input: 'k' BG values
-                Y.append(patient[j]['cbg'].values[i+k + PH - 1])
+    for patient in range(len(patient_data)):
+        for idx in range(len(patient_data[patient]) - window - horizon + 1):
+            if max(patient_data[patient]['missing_cbg'].values[idx:idx + window + horizon]) == 0:
+                X.append(patient_data[patient]['cbg'].values[idx:idx + window])
+                Y.append(patient_data[patient]['cbg'].values[idx + window + horizon - 1])
     return [np.array(X), np.array(Y)]
 
 
 X_train, Y_train = sequences(train_data, k, PH)
 X_test, Y_test = sequences(test_data, k, PH)
 
+# Reshaping
+X_train = X_train.reshape(-1, k, 1)
+X_test = X_test.reshape(-1, k, 1)
+Y_train = Y_train.reshape(-1, 1)
+Y_test = Y_test.reshape(-1, 1)
+
 # Creating the RNN model
 rnn_model = Sequential()
-rnn_model.add(LSTM(50, return_sequences=True, input_shape=(k, 1)))
-rnn_model.add(LSTM(50, return_sequences=True))
-rnn_model.add(LSTM(50))
+rnn_model.add(LSTM(units=64, input_shape=(k, 1), return_sequences=True))
+rnn_model.add(LSTM(units=64))
 rnn_model.add(Dropout(0.2))
-rnn_model.add(Dense(1, activation='linear'))
+rnn_model.add(Dense(units=1, activation='linear'))
+rnn_model.summary()
 
 # Optimizer
 optimizer = Adam(
@@ -94,14 +100,14 @@ optimizer = Adam(
 # compile the model
 rnn_model.compile(
     optimizer=optimizer,
-    loss="bce",
-    metrics=["accuracy", keras.metrics.Precision(), keras.metrics.Recall()]
+    loss="mean_squared_error",
+    metrics=[keras.metrics.MeanSquaredError(), keras.metrics.Recall()]
     )
 
 cp_path = "./trained/model"
 checkpoint = ModelCheckpoint(
     cp_path,
-    monitor="val_accuracy",
+    monitor="val_loss",
     save_best_only=True,
     save_weights_only=False,
     verbose=1,
@@ -111,21 +117,21 @@ checkpoint = ModelCheckpoint(
 
 # adaptable learning rate
 def scheduler(epoch):
-    if epoch < 1:
-        return 1e-5
+    if epoch < 10:  # Gradually decrease for the first 10 epochs
+        return 1e-4 / (10 * (epoch*2+1))
     else:
-        return 1e-6
+        return 1e-10
 
 
 lr_scheduler = LearningRateScheduler(scheduler)
-epochs = 2
+epochs = 20
 
 # Train the RNN model
 h = rnn_model.fit(
     X_train,
     Y_train,
     epochs=epochs,
-    batch_size=16,
+    batch_size=32,
     validation_data=[X_test, Y_test],
     callbacks=[checkpoint, lr_scheduler]
     )
@@ -134,31 +140,31 @@ with open('./trained/history.txt', 'w') as f:
     f.write(str(h.history))
     f.close()
 
-# Plot Accuracy across epochs and interpret it
+# Plot Mean squared error across epochs and interpret it
 plt.figure()
-plt.plot(h.history['accuracy'])
-plt.plot(h.history['val_accuracy'])
-plt.title('Model from scratch Accuracy')
+plt.plot(h.history['mse'])
+plt.plot(h.history['val_mse'])
+plt.title('Model MSE')
 plt.xlabel('Epoch')
 plt.xlim(-0.5, epochs-0.5)
 plt.xticks(range(0, epochs), np.linspace(1, epochs, epochs, dtype=int))
-plt.ylabel('Accuracy')
+plt.ylabel('MSE')
 plt.legend(['train', 'test'], loc='upper left')
 # plt.show()
-plt.savefig('./trained/sc_accuracy_plot.png')
+plt.savefig('./trained/mse_plot.png')
 
 # Plot loss across epochs and interpret it
 plt.figure()
 plt.plot(h.history['loss'])
 plt.plot(h.history['val_loss'])
-plt.title('Model from scratch Loss')
+plt.title('Model Loss')
 plt.xlabel('Epoch')
 plt.xlim(-0.5, epochs-0.5)
 plt.xticks(range(0, epochs), np.linspace(1, epochs, epochs, dtype=int))
 plt.ylabel('Loss')
 plt.legend(['train', 'test'], loc='upper right')
 # plt.show()
-plt.savefig('./trained/sc_loss_plot.png')
+plt.savefig('./trained/loss_plot.png')
 
 # load best model saved
 rnn_model = load_model(
@@ -167,14 +173,11 @@ rnn_model = load_model(
     compile=True
     )
 
-# compute the model accuracy, loss, precision and recall using model.evaluate and print them
-loss, accuracy, precision, recall = rnn_model.evaluate(X_test, Y_test)
+# Evaluate the model using MSE and MAE
+mse, mae = rnn_model.evaluate(X_test, Y_test)
 
-# Print the evaluation metrics and precision/recall
 with open('trained/evaluation.txt', 'w') as f:
-    f.write(f'Loss: {100*loss:.2f}\n')
-    f.write(f'Accuracy: {100*accuracy:.2f}\n')
-    f.write(f'Precision: {100*precision:.2f}\n')
-    f.write(f'Recall: {100*recall:.2f}\n')
+    f.write(f'Mean Squared Error (MSE): {mse:.4f}\n')
+    f.write(f'Mean Absolute Error (MAE): {mae:.4f}\n')
     f.close()
 
