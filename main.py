@@ -58,6 +58,7 @@ if visu:
         plt.title('CBG over Time'+str(i))
     plt.show()
 
+# TODO: Parameter changes?
 k = 100  # Number of past BG values
 PH = 5  # Prediction horizon
 
@@ -73,9 +74,16 @@ def sequences(patient_data, window, horizon):
                 Y.append(patient_data[patient]['cbg'].values[idx + window + horizon - 1])
     return [np.array(X), np.array(Y)]
 
+# TODO: Data normalizing between 0 & 1 ?
+# TODO: scipy.cubic_spline input missing data in cbg
+# TODO: fill up the carbs and insulin with 0es => add into input (correlation matrix which features are important)
 
 X_train, Y_train = sequences(train_data, k, PH)
 X_test, Y_test = sequences(test_data, k, PH)
+
+# TODO: 2 experiments:
+#  patient separately => 12 models
+#  all together generalized (without test patient) => 12 models
 
 # Reshaping
 X_train = X_train.reshape(-1, k, 1)
@@ -83,6 +91,8 @@ X_test = X_test.reshape(-1, k, 1)
 Y_train = Y_train.reshape(-1, 1)
 Y_test = Y_test.reshape(-1, 1)
 
+# TODO: possible model changes: activation function because of normalized data
+# TODO: (k, 4) if four features cbg, insulin basal, bolus, carb
 # Creating the RNN model
 rnn_model = Sequential()
 rnn_model.add(LSTM(units=64, input_shape=(k, 1), return_sequences=True))
@@ -105,6 +115,7 @@ rnn_model.compile(
     metrics=[]
     )
 
+# saving best model while training
 cp_path = "./trained/model"
 checkpoint = ModelCheckpoint(
     cp_path,
@@ -118,7 +129,7 @@ checkpoint = ModelCheckpoint(
 
 # adaptable learning rate
 def scheduler(epoch):
-    if epoch < 20:  # Gradually decrease for the first 10 epochs
+    if epoch < 20:  # Gradually decrease for the first 20 epochs
         return 1e-2 / (10 * (epoch/2+1))
     else:
         return 1e-4
