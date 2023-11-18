@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import scipy as sp
+import sys
 import tensorflow as tf
 from tensorflow import keras
 from keras.models import Sequential, load_model
@@ -100,7 +100,8 @@ def prepareData(patient_data, normalizeParam=None):
 
         # normalization
         for param in normalizeParam:
-            preparedData[patient][param] = preparedData[patient][param]/max(preparedData[patient][param])
+            if not max(preparedData[patient][param]) == 0:  # avoid div by 0
+                preparedData[patient][param] = preparedData[patient][param]/max(preparedData[patient][param])
 
     if VISU_PLOTS:
         plt.figure()
@@ -124,7 +125,7 @@ def prepareData(patient_data, normalizeParam=None):
     return preparedData
 
 
-def correlation_matrix(patient_data,prediction_horizon,target='cbg'):
+def correlationMatrix(patient_data,prediction_horizon,target='cbg'):
 
     corr_matrix_cbg_next = []
 
@@ -159,7 +160,7 @@ def correlation_matrix(patient_data,prediction_horizon,target='cbg'):
 train_data = prepareData(train_data)
 test_data = prepareData(test_data)
 
-correlation_matrix(train_data, PH)
+correlationMatrix(train_data, PH)
 
 # TODO: 2 experiments:
 #  patient separately => 12 models
