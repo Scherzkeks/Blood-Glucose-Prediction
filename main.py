@@ -17,7 +17,7 @@ from keras.optimizers import Adam
 
 VISU_PLOTS = False  # Visualization of Data ON/OFF
 VISU_CORR = False  # Visualization of Correlation matrices ON/OFF
-RUN_MODEL = True  # Model training and testing ON/OFF
+RUN_MODEL = False  # Model training and testing ON/OFF
 EVAL_MODEL = True  # Evaluation through loading model
 
 METHOD = True  # True == Separately / False == generalized data
@@ -295,4 +295,27 @@ if EVAL_MODEL:
         f.write(f'Mean Squared Error (MSE): {mse:.4f}\n')
         f.close()
 
-# TODO: visualization of predicted values compared to true values to check the validity
+    # TODO-DONE: visualization of predicted values compared to true values to check the validity
+    pred_value = rnn_model.predict(X_test)
+
+    # Plot loss across epochs and interpret it
+    plt.figure()
+    plt.plot(pred_value)
+    plt.plot(Y_test)
+    plt.title('Comparison')
+    plt.xlabel('Timestamps in 5 Minute Intervals')
+    plt.xlim(500, 1000)
+    plt.ylabel('cbg normalized')
+    plt.legend(['predicted', 'truth'], loc='upper right')
+    # plt.show()
+    plt.savefig('./trained/' + folder + '/compare_plot.png')
+
+    # Plot loss across epochs and interpret it
+    plt.figure()
+    plt.plot(Y_test-pred_value)
+    plt.title('Difference')
+    plt.xlim(1000, 2000)
+    plt.xlabel('Timestamps in 5 Minute Intervals')
+    plt.ylabel('truth-predicted cbg')
+    # plt.show()
+    plt.savefig('./trained/' + folder + '/difference_plot.png')
