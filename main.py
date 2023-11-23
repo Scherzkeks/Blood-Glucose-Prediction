@@ -17,10 +17,10 @@ from keras.optimizers import Adam
 
 VISU_PLOTS = False  # Visualization of Data ON/OFF
 VISU_CORR = False  # Visualization of Correlation matrices ON/OFF
-RUN_MODEL = False  # Model training and testing ON/OFF
+RUN_MODEL = True  # Model training and testing ON/OFF
 EVAL_MODEL = True  # Evaluation through loading model
 
-METHOD = True  # True == Separately / False == generalized data
+METHOD = False  # True == Separately / False == generalized data
 PATIENT_TBD = 0  # TODO: change for different patients
 folder = 'patient_'+str(PATIENT_TBD)+'_method_'+str(METHOD)
 
