@@ -7,8 +7,8 @@ import ast
 import sys
 import tensorflow as tf
 from tensorflow import keras
-from keras.models import Sequential, load_model
-from keras.layers import LSTM, Dense, Dropout
+from keras.models import Sequential, load_model, Model
+from keras.layers import LSTM, Dense, Dropout, Input, MultiHeadAttention, LayerNormalization, GlobalAveragePooling1D
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.optimizers import Adam
 
@@ -20,9 +20,33 @@ VISU_CORR = False  # Visualization of Correlation matrices ON/OFF
 RUN_MODEL = True  # Model training and testing ON/OFF
 EVAL_MODEL = True  # Evaluation through loading model
 
-METHOD = False  # True == Separately / False == generalized data
-PATIENT_TBD = 0  # TODO: change for different patients
-folder = 'patient_'+str(PATIENT_TBD)+'_method_'+str(METHOD)
+# TODO: change for different experiments
+MODEL = True  # True == RNN / False == SAN
+MODE = True  # True == Separately / False == generalized data
+PATIENT_TBD = 1  # change for different patients
+
+# Parameter changes
+k = 100  # Number of past BG values
+PH = 5  # Prediction horizon
+
+# folder naming:
+if MODEL:
+    modelname = "RNN"
+else:
+    modelname = "SAN"
+if MODE:
+    modename = "separately"
+else:
+    modename = "generalized"
+
+folder = modelname + "_" + modename + "_k-" + str(k) + "_PH-" + str(PH) + "_patient-" + str(PATIENT_TBD)
+
+# TODO: 2 models: RNN and ?
+#       5 prediction horizons
+#  2 experiments:
+#  patient separately => 12 models
+#  all together generalized (without test patient) => 12 models
+
 
 # Load Data
 path = "Ohio Data"
@@ -78,15 +102,14 @@ def prepareData(patient_data, normalizeParam=None):
     for patient in range(len(patient_data)):
         preparedData.append(patient_data[patient].copy(deep=True))
 
-        # TODO-DONE: scipy.cubic_spline input missing data in cbg (not using cubic spline tho)
         # interpolate missing CBG values not with cubic spline interpolation but pchip
         preparedData[patient]['cbg'] = preparedData[patient]['cbg'].interpolate(method='pchip')
         preparedData[patient]['cbg'] = preparedData[patient]['cbg'].fillna(np.mean(preparedData[patient]['cbg']))
 
-        # replace all other NaN by 0 TODO-DONE: fill up the carbs and insulin with 0es
+        # replace all other NaN by 0
         preparedData[patient] = preparedData[patient].fillna(0)
 
-        # normalization TODO-DONE: Data normalizing between 0 & 1 ?
+        # normalization
         for param in normalizeParam:
             if not max(preparedData[patient][param]) == 0:  # avoid div by 0
                 preparedData[patient][param] = preparedData[patient][param]/max(preparedData[patient][param])
@@ -115,7 +138,6 @@ def prepareData(patient_data, normalizeParam=None):
 
 def correlationMatrix(patient_data, prediction_horizon, target='cbg'):
 
-    # TODO-DONE: correlation matrix which features are important
     corr_matrix_cbg_next = []
 
     for patient in range(len(patient_data)):
@@ -142,18 +164,35 @@ def correlationMatrix(patient_data, prediction_horizon, target='cbg'):
     return mean_corr_matrix_cbg_next
 
 
-# TODO: Parameter changes?
-k = 100  # Number of past BG values
-PH = 5  # Prediction horizon
+def build_san(input_shape, num_head, d_model, ff_dim, dropout):
+    inputs = Input(shape=input_shape)
+
+    # Self-Attention layers
+    self_attention_1 = MultiHeadAttention(num_heads=num_head, key_dim=d_model)(inputs, inputs)
+    x = LayerNormalization(epsilon=1e-6)(inputs + self_attention_1)
+
+    self_attention_2 = MultiHeadAttention(num_heads=num_head, key_dim=d_model*2)(x, x)
+    x = LayerNormalization(epsilon=1e-6)(x + self_attention_2)
+
+    # Global Average Pooling to reduce temporal dimension
+    x = GlobalAveragePooling1D()(x)
+
+    # Feed Forward
+    x = Dense(ff_dim, activation='relu')(x)
+    x = Dropout(dropout)(x)
+
+    # output
+    outputs = Dense(1, activation='sigmoid')(x)
+
+    # Model
+    model = Model(inputs=inputs, outputs=outputs, name='san')
+
+    return model
 
 
-# Prepare sequences for the RNN model
-def sequences(patient_data, window, horizon, X, Y):  # TODO-DONE: add insulin (bolus and basal) and carbs
-
-    # TODO-DONE: change back to simple cutting, perhaps with a boolean to switch between sequencing
-    #  the WHOLE_PATIENT_DATA (with or without exception of one patient) or just of ONE_PATIENT
+# Prepare sequences for the model
+def sequences(patient_data, window, horizon, X, Y):
     for idx in range(len(patient_data) - window - horizon + 1):
-        # if max(patient_data['missing_cbg'].values[idx:idx + window + horizon]) == 0: # TODO-DONE: because of spline
         cbg = patient_data['cbg'].values[idx:idx + window]
         basal = patient_data['basal'].values[idx:idx + window]
         carb = patient_data['carbInput'].values[idx:idx + window]
@@ -168,13 +207,9 @@ test_data = prepareData(test_data)
 
 correlationMatrix(train_data, PH)
 
-# TODO-DONE: 2 experiments:
-#  patient separately => 12 models
-#  all together generalized (without test patient) => 12 models
-
 X = []
 Y = []
-if METHOD:  # separately
+if MODE:  # separately
     X_train, Y_train = sequences(train_data[PATIENT_TBD], k, PH, X, Y)
     X_test, Y_test = sequences(test_data[PATIENT_TBD], k, PH, X, Y)
 else:  # generalized
@@ -190,16 +225,21 @@ X_test = X_test.reshape(-1, k, 4)
 Y_train = Y_train.reshape(-1, 1)
 Y_test = Y_test.reshape(-1, 1)
 
+if MODEL:
+    # Creating the RNN model
+    model = Sequential()
+    model.add(LSTM(units=64, input_shape=(k, 4), return_sequences=True))
+    model.add(LSTM(units=128, return_sequences=True))
+    model.add(LSTM(units=256))
+    model.add(Dropout(0.2))
+    model.add(Dense(units=64, activation='relu'))
+    model.add(Dense(units=1, activation='sigmoid'))
+    model.summary()
+else:
+    # Creating the SAN model
+    model = build_san(input_shape=(k, 4), num_head=4, d_model=64, ff_dim=64, dropout=0.2)
+    model.summary()
 
-# TODO-DONE: possible model changes: activation function because of normalized data => SIGMOID?
-# TODO-DONE: (k, 4) if four features cbg, insulin basal, bolus, carb
-# Creating the RNN model
-rnn_model = Sequential()
-rnn_model.add(LSTM(units=64, input_shape=(k, 4), return_sequences=True))
-rnn_model.add(LSTM(units=64))
-rnn_model.add(Dropout(0.2))
-rnn_model.add(Dense(units=1, activation='sigmoid'))
-rnn_model.summary()
 
 # Optimizer
 optimizer = Adam(
@@ -209,7 +249,7 @@ optimizer = Adam(
     )
 
 # compile the model
-rnn_model.compile(
+model.compile(
     optimizer=optimizer,
     loss="mean_squared_error",
     metrics=[]
@@ -240,7 +280,7 @@ epochs = 20
 
 if RUN_MODEL:
     # Train the RNN model
-    h = rnn_model.fit(
+    h = model.fit(
         X_train,
         Y_train,
         epochs=epochs,
@@ -255,7 +295,7 @@ if RUN_MODEL:
 
 if EVAL_MODEL:
     # load best model saved
-    rnn_model = load_model(
+    model = load_model(
         cp_path,
         custom_objects=None,
         compile=True
@@ -289,14 +329,13 @@ if EVAL_MODEL:
     plt.savefig('./trained/'+folder+'/lr_plot.png')
 
     # Evaluate the model using MSE and MAE
-    mse = rnn_model.evaluate(X_test, Y_test)
+    mse = model.evaluate(X_test, Y_test)
 
     with open('trained/'+folder+'/evaluation.txt', 'w') as f:
         f.write(f'Mean Squared Error (MSE): {mse:.4f}\n')
         f.close()
 
-    # TODO-DONE: visualization of predicted values compared to true values to check the validity
-    pred_value = rnn_model.predict(X_test)
+    pred_value = model.predict(X_test)
 
     # Plot loss across epochs and interpret it
     plt.figure()
@@ -312,10 +351,13 @@ if EVAL_MODEL:
 
     # Plot loss across epochs and interpret it
     plt.figure()
-    plt.plot(Y_test-pred_value)
+    plt.plot(Y_test-pred_value, label='Differences')
+    plt.plot(abs(Y_test-pred_value), label='Absolute Differences')
+    plt.axhline(np.sum(abs(Y_test - pred_value)) / len(Y_test), color='r', linestyle='--', label='Mean')
     plt.title('Difference')
     plt.xlim(1000, 2000)
     plt.xlabel('Timestamps in 5 Minute Intervals')
     plt.ylabel('truth-predicted cbg')
+    plt.legend(loc='upper right')
     # plt.show()
     plt.savefig('./trained/' + folder + '/difference_plot.png')
