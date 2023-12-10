@@ -11,7 +11,7 @@ from keras.models import Sequential, load_model, Model
 from keras.layers import LSTM, Dense, Dropout, Input, MultiHeadAttention, LayerNormalization, GlobalAveragePooling1D
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.optimizers import Adam
-
+import scipy as sp
 
 # -------------------- Coding ------------------------------------------------------------------------------------------
 
@@ -26,8 +26,8 @@ MODE = True  # True == Separately / False == generalized data
 PATIENT_TBD = 1  # change for different patients
 
 # Parameter changes
-k = 100  # Number of past BG values
-PH = 5  # Prediction horizon
+k = 36  # Number of past BG values
+PH = 12  # Prediction horizon
 
 # folder naming:
 if MODEL:
@@ -47,12 +47,11 @@ folder = modelname + "_" + modename + "_k-" + str(k) + "_PH-" + str(PH) + "_pati
 #  patient separately => 12 models
 #  all together generalized (without test patient) => 12 models
 
-
 # Load Data
 path = "Ohio Data"
 
-train_data = []
-test_data = []
+raw_train_data = []
+raw_test_data = []
 
 for year in os.listdir(path):
     train_path = os.path.join(path, year, "train")
@@ -63,14 +62,14 @@ for year in os.listdir(path):
             if file.endswith('.csv'):  # Check if the file is a CSV file
                 file_path = os.path.join(root, file)  # full file path
                 data = pd.read_csv(file_path)
-                train_data.append(data)
+                raw_train_data.append(data)
 
     for root, dirs, files in os.walk(test_path):
         for file in files:
             if file.endswith('.csv'):  # Check if the file is a CSV file
                 file_path = os.path.join(root, file)  # full file path
                 data = pd.read_csv(file_path)
-                test_data.append(data)
+                raw_test_data.append(data)
 
 # The following are the columns of the csv files:
 #   5minute_intervals_timestamp:    Timestamp in five-minute intervals
@@ -84,9 +83,9 @@ for year in os.listdir(path):
 #   bolus:                          Bolus insulin injection
 
 if VISU_PLOTS:
-    for i in range(len(test_data)):
+    for i in range(len(raw_test_data)):
         plt.subplot(3, 4, i+1)
-        plt.plot(test_data[i]['cbg'])
+        plt.plot(raw_test_data[i]['cbg'])
         plt.xlabel('Timestamps in 5 Minute Intervals')
         plt.ylabel('CBG')
         plt.title('CBG over Time'+str(i))
@@ -94,63 +93,91 @@ if VISU_PLOTS:
 
 
 def prepareData(patient_data, normalizeParam=None):
+    print("Preparing data")
     if normalizeParam is None:
         normalizeParam = ['cbg', 'finger', 'basal', 'hr', 'gsr', 'carbInput', 'bolus']
 
+    param_max = dict.fromkeys(normalizeParam,1e-10)
     preparedData = []
 
-    for patient in range(len(patient_data)):
-        preparedData.append(patient_data[patient].copy(deep=True))
+    for patientIdx in range(len(patient_data)):
+        preparedData.append(patient_data[patientIdx].copy(deep=True))
 
         # interpolate missing CBG values not with cubic spline interpolation but pchip
-        preparedData[patient]['cbg'] = preparedData[patient]['cbg'].interpolate(method='pchip')
-        preparedData[patient]['cbg'] = preparedData[patient]['cbg'].fillna(np.mean(preparedData[patient]['cbg']))
+        preparedData[patientIdx]['cbg'] = preparedData[patientIdx]['cbg'].interpolate(method='pchip')
+        preparedData[patientIdx]['cbg'] = preparedData[patientIdx]['cbg'].fillna(np.mean(preparedData[patientIdx]['cbg']))
 
         # replace all other NaN by 0
-        preparedData[patient] = preparedData[patient].fillna(0)
+        preparedData[patientIdx] = preparedData[patientIdx].fillna(0)
 
-        # normalization
+        # save the highest value for normalization
         for param in normalizeParam:
-            if not max(preparedData[patient][param]) == 0:  # avoid div by 0
-                preparedData[patient][param] = preparedData[patient][param]/max(preparedData[patient][param])
+            param_max[param] = max(max(preparedData[patientIdx][param]),param_max[param])
+
+    # normalization
+    for patientIdx in range(len(patient_data)):
+        for param in normalizeParam:
+            preparedData[patientIdx][param] = preparedData[patientIdx][param] / param_max[param]  # """
+
+    raw_train_set = patient_data[:12]
+    raw_test_set = patient_data[12:]
+
+    train_set = preparedData[:12]
+    test_set = preparedData[12:]
 
     if VISU_PLOTS:
         plt.figure()
-        for idx in range(len(test_data)):
+        for idx in range(len(raw_train_set)):
             plt.subplot(3, 4, idx + 1)
-            plt.plot(patient_data[idx]['cbg'])
+            plt.plot(raw_train_set[idx]['cbg'])
             plt.xlabel('Timestamps in 5 Minute Intervals')
             plt.ylabel('CBG')
-            plt.title('CBG over Time' + str(idx))
+            plt.title('TRAIN_SET: CBG over Time, patient' + str(idx))
 
         plt.figure()
-        for idx in range(len(preparedData)):
+        for idx in range(len(train_set)):
             plt.subplot(3, 4, idx + 1)
-            plt.plot(preparedData[idx]['cbg'])
+            plt.plot(train_set[idx]['cbg'])
             plt.xlabel('Timestamps in 5 Minute Intervals')
             plt.ylabel('CBG')
-            plt.title('Interpolated CBG over Time' + str(idx))
+            plt.title('TRAIN_SET: Interpolated CBG over Time, patient' + str(idx))
+
+        plt.figure()
+        for idx in range(len(raw_test_set)):
+            plt.subplot(3, 4, idx + 1)
+            plt.plot(raw_test_set[idx]['cbg'])
+            plt.xlabel('Timestamps in 5 Minute Intervals')
+            plt.ylabel('CBG')
+            plt.title('TEST_SET: CBG over Time, patient' + str(idx))
+
+        plt.figure()
+        for idx in range(len(test_set)):
+            plt.subplot(3, 4, idx + 1)
+            plt.plot(test_set[idx]['cbg'])
+            plt.xlabel('Timestamps in 5 Minute Intervals')
+            plt.ylabel('CBG')
+            plt.title('TEST_SET: Interpolated CBG over Time, patient' + str(idx))
 
         plt.show()
 
-    return preparedData
+    # split into train and test data set again
+    return train_set, test_set, param_max
 
 
 def correlationMatrix(patient_data, prediction_horizon, target='cbg'):
 
     corr_matrix_cbg_next = []
 
-    for patient in range(len(patient_data)):
+    for patientIdx in range(len(patient_data)):
 
         # Create a new column with the next row of the target column
-        patient_data[patient][target + '_next'] = patient_data[patient][target].shift(-prediction_horizon)
+        patient_data[patientIdx][target + '_next'] = patient_data[patientIdx][target].shift(-prediction_horizon)
 
         # Calculate the correlation matrix
-        corr_matrix_cbg_next.append(patient_data[patient].corr()[target + '_next'])  # extract only cbg_next from the correlation
-        corr_matrix = patient_data[patient].corr()  # all correlation matrix
+        corr_matrix_cbg_next.append(patient_data[patientIdx].corr()[target + '_next'])  # extract only cbg_next from the correlation
+        corr_matrix = patient_data[patientIdx].corr()  # all correlation matrix
 
         # Display the correlation values
-        # TODO: why is hr NaN?
         if VISU_CORR:
             print(f"Correlation with {target}_next:")
             print(corr_matrix)
@@ -198,17 +225,17 @@ def sequences(patient_data, window, horizon, X, Y):
         carb = patient_data['carbInput'].values[idx:idx + window]
         bolus = patient_data['bolus'].values[idx:idx + window]
         X.append([cbg, basal, carb, bolus])
-        Y.append(patient_data['cbg'].values[idx + window + horizon - 1])
+        Y.append(patient_data['cbg'].values[idx + window - 1 + horizon])
     return [np.array(X), np.array(Y)]
 
 
-train_data = prepareData(train_data)
-test_data = prepareData(test_data)
+train_data, test_data, param_max = prepareData(raw_train_data + raw_test_data)
 
 correlationMatrix(train_data, PH)
 
 X = []
 Y = []
+
 if MODE:  # separately
     X_train, Y_train = sequences(train_data[PATIENT_TBD], k, PH, X, Y)
     X_test, Y_test = sequences(test_data[PATIENT_TBD], k, PH, X, Y)
@@ -335,7 +362,11 @@ if EVAL_MODEL:
         f.write(f'Mean Squared Error (MSE): {mse:.4f}\n')
         f.close()
 
+    # predict cbg
     pred_value = model.predict(X_test)
+
+    # calc diff
+    diff = Y_test - pred_value
 
     # Plot loss across epochs and interpret it
     plt.figure()
@@ -351,13 +382,43 @@ if EVAL_MODEL:
 
     # Plot loss across epochs and interpret it
     plt.figure()
-    plt.plot(Y_test-pred_value, label='Differences')
-    plt.plot(abs(Y_test-pred_value), label='Absolute Differences')
-    plt.axhline(np.sum(abs(Y_test - pred_value)) / len(Y_test), color='r', linestyle='--', label='Mean')
+    plt.plot(diff, label='Differences')
+    plt.plot(abs(diff), label='Absolute Differences')
+    plt.axhline(np.sum(abs(diff)) / len(diff), color='r', linestyle='--', label='Mean')
     plt.title('Difference')
     plt.xlim(1000, 2000)
     plt.xlabel('Timestamps in 5 Minute Intervals')
-    plt.ylabel('truth-predicted cbg')
+    plt.ylabel('truth-predicted cbg normalized')
     plt.legend(loc='upper right')
     # plt.show()
     plt.savefig('./trained/' + folder + '/difference_plot.png')
+
+    # reverse normalization
+    backtrs_pred_value = pred_value * param_max['cbg']
+    backtrs_Y_test = Y_test * param_max['cbg']
+    backtrs_diff = backtrs_Y_test - backtrs_pred_value
+
+    # Plot loss across epochs and interpret it
+    plt.figure()
+    plt.plot(backtrs_pred_value)
+    plt.plot(backtrs_Y_test)
+    plt.title('Comparison backtransformed')
+    plt.xlabel('Timestamps in 5 Minute Intervals')
+    plt.xlim(500, 1000)
+    plt.ylabel('cbg backtransformed')
+    plt.legend(['predicted', 'truth'], loc='upper right')
+    # plt.show()
+    plt.savefig('./trained/' + folder + '/compare_plot_backtransformed.png')
+
+    # Plot loss across epochs and interpret it
+    plt.figure()
+    plt.plot(diff, label='Differences')
+    plt.plot(abs(diff), label='Absolute Differences')
+    plt.axhline(np.sum(abs(diff)) / len(diff), color='r', linestyle='--', label='Mean')
+    plt.title('Difference backtransformed')
+    plt.xlim(1000, 2000)
+    plt.xlabel('Timestamps in 5 Minute Intervals')
+    plt.ylabel('truth-predicted cbg backtransformed')
+    plt.legend(loc='upper right')
+    # plt.show()
+    plt.savefig('./trained/' + folder + '/difference_plot_backtransformed.png')
