@@ -26,8 +26,8 @@ MODE = True  # True == Separately / False == generalized data
 PATIENT_TBD = 1  # change for different patients
 
 # Parameter changes
-k = 36  # Number of past BG values
-PH = 12  # Prediction horizon
+k = 120  # Number of past BG values
+PH = 6  # Prediction horizon
 
 # folder naming:
 if MODEL:
