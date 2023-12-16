@@ -26,8 +26,8 @@ MODE = True  # True == Separately / False == generalized data
 PATIENT_TBD = 1  # change for different patients
 
 # Parameter changes
-k = 240  # Number of past BG values
-PH = 12  # Prediction horizon
+k = 180  # Number of past BG values
+PH = 6  # Prediction horizon
 
 # folder naming:
 if MODEL:
@@ -372,7 +372,7 @@ if EVAL_MODEL:
     plt.figure()
     plt.plot(pred_value)
     plt.plot(Y_test)
-    plt.title(f'Comparison of prediction and ground-truth ({folder})')
+    plt.title(f'Comparison of prediction and ground-truth\n ({folder})')
     plt.xlim(500, 1000)
     plt.xlabel('Timestamps in 5 Minute Intervals')
     plt.ylabel('cbg normalized')
@@ -385,7 +385,7 @@ if EVAL_MODEL:
     plt.plot(diff, label=f'Differences')
     plt.plot(abs(diff), label='Absolute Differences')
     plt.axhline(np.sum(abs(diff)) / len(diff), color='r', linestyle='--', label='Mean absolute difference')
-    plt.title(f'Difference prediction and ground-truth ({folder})')
+    plt.title(f'Difference prediction and ground-truth\n ({folder})')
     plt.xlim(1000, 2000)
     plt.xlabel('Timestamps in 5 Minute Intervals')
     plt.ylabel('predicted cbg normalized')
@@ -402,7 +402,7 @@ if EVAL_MODEL:
     plt.figure()
     plt.plot(backtrs_pred_value)
     plt.plot(backtrs_Y_test)
-    plt.title(f'Comparison of prediction and ground-truth ({folder})')
+    plt.title(f'Comparison of prediction and ground-truth\n ({folder})')
     plt.xlim(500, 1000)
     plt.xlabel('Timestamps in 5 Minute Intervals')
     plt.ylabel('cbg / mg/dL')
@@ -415,7 +415,7 @@ if EVAL_MODEL:
     plt.plot(diff, label='Differences')
     plt.plot(abs(diff), label='Absolute Differences')
     plt.axhline(np.sum(abs(diff)) / len(diff), color='r', linestyle='--', label='Mean absolute difference')
-    plt.title(f'Difference prediction and ground-truth ({folder})')
+    plt.title(f'Difference prediction and ground-truth\n ({folder})')
     plt.xlim(1000, 2000)
     plt.xlabel('Timestamps in 5 Minute Intervals')
     plt.ylabel('cbg difference / mg/dL')
