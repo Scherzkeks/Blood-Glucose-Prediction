@@ -17,17 +17,17 @@ import scipy as sp
 
 VISU_PLOTS = False  # Visualization of Data ON/OFF
 VISU_CORR = False  # Visualization of Correlation matrices ON/OFF
-RUN_MODEL = True  # Model training and testing ON/OFF
+RUN_MODEL = False  # Model training and testing ON/OFF
 EVAL_MODEL = True  # Evaluation through loading model
 
 # TODO: change for different experiments
 MODEL = True  # True == RNN / False == SAN
 MODE = True  # True == Separately / False == generalized data
-PATIENT_TBD = 1  # change for different patients
+PATIENT_TBD = 4  # change for different patients
 
 # Parameter changes
-k = 120  # Number of past BG values
-PH = 5  # Prediction horizon
+k = 36  # Number of past BG values
+PH = 6  # Prediction horizon
 
 # folder naming:
 if MODEL:
