@@ -26,8 +26,8 @@ MODE = True  # True == Separately / False == generalized data
 PATIENT_TBD = 1  # change for different patients
 
 # Parameter changes
-k = 120  # Number of past BG values
-PH = 6  # Prediction horizon
+k = 240  # Number of past BG values
+PH = 12  # Prediction horizon
 
 # folder naming:
 if MODEL:
@@ -368,27 +368,27 @@ if EVAL_MODEL:
     # calc diff
     diff = Y_test - pred_value
 
-    # Plot loss across epochs and interpret it
+    # Plot comparison between prediction and ground-truth
     plt.figure()
     plt.plot(pred_value)
     plt.plot(Y_test)
-    plt.title('Comparison')
-    plt.xlabel('Timestamps in 5 Minute Intervals')
+    plt.title(f'Comparison of prediction and ground-truth ({folder})')
     plt.xlim(500, 1000)
+    plt.xlabel('Timestamps in 5 Minute Intervals')
     plt.ylabel('cbg normalized')
     plt.legend(['predicted', 'truth'], loc='upper right')
     # plt.show()
     plt.savefig('./trained/' + folder + '/compare_plot.png')
 
-    # Plot loss across epochs and interpret it
+    # Plot (absolute) differences between prediction and ground-truth
     plt.figure()
-    plt.plot(diff, label='Differences')
+    plt.plot(diff, label=f'Differences')
     plt.plot(abs(diff), label='Absolute Differences')
-    plt.axhline(np.sum(abs(diff)) / len(diff), color='r', linestyle='--', label='Mean')
-    plt.title('Difference')
+    plt.axhline(np.sum(abs(diff)) / len(diff), color='r', linestyle='--', label='Mean absolute difference')
+    plt.title(f'Difference prediction and ground-truth ({folder})')
     plt.xlim(1000, 2000)
     plt.xlabel('Timestamps in 5 Minute Intervals')
-    plt.ylabel('truth-predicted cbg normalized')
+    plt.ylabel('predicted cbg normalized')
     plt.legend(loc='upper right')
     # plt.show()
     plt.savefig('./trained/' + folder + '/difference_plot.png')
@@ -398,27 +398,27 @@ if EVAL_MODEL:
     backtrs_Y_test = Y_test * param_max['cbg']
     backtrs_diff = backtrs_Y_test - backtrs_pred_value
 
-    # Plot loss across epochs and interpret it
+    # Plot comparison between prediction and ground-truth (backtransformed)
     plt.figure()
     plt.plot(backtrs_pred_value)
     plt.plot(backtrs_Y_test)
-    plt.title('Comparison backtransformed')
-    plt.xlabel('Timestamps in 5 Minute Intervals')
+    plt.title(f'Comparison of prediction and ground-truth ({folder})')
     plt.xlim(500, 1000)
-    plt.ylabel('cbg backtransformed')
+    plt.xlabel('Timestamps in 5 Minute Intervals')
+    plt.ylabel('cbg / mg/dL')
     plt.legend(['predicted', 'truth'], loc='upper right')
     # plt.show()
     plt.savefig('./trained/' + folder + '/compare_plot_backtransformed.png')
 
-    # Plot loss across epochs and interpret it
+    # Plot (absolute) differences between prediction and ground-truth (backtransformed)
     plt.figure()
     plt.plot(diff, label='Differences')
     plt.plot(abs(diff), label='Absolute Differences')
-    plt.axhline(np.sum(abs(diff)) / len(diff), color='r', linestyle='--', label='Mean')
-    plt.title('Difference backtransformed')
+    plt.axhline(np.sum(abs(diff)) / len(diff), color='r', linestyle='--', label='Mean absolute difference')
+    plt.title(f'Difference prediction and ground-truth ({folder})')
     plt.xlim(1000, 2000)
     plt.xlabel('Timestamps in 5 Minute Intervals')
-    plt.ylabel('truth-predicted cbg backtransformed')
+    plt.ylabel('cbg difference / mg/dL')
     plt.legend(loc='upper right')
     # plt.show()
     plt.savefig('./trained/' + folder + '/difference_plot_backtransformed.png')
