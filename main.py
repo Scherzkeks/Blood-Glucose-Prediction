@@ -174,8 +174,12 @@ def correlationMatrix(patient_data, prediction_horizon, target='cbg'):
         patient_data[patientIdx][target + '_next'] = patient_data[patientIdx][target].shift(-prediction_horizon)
 
         # Calculate the correlation matrix
-        corr_matrix_cbg_next.append(patient_data[patientIdx].corr()[target + '_next'])  # extract only cbg_next from the correlation
-        corr_matrix = patient_data[patientIdx].corr()  # all correlation matrix
+        # extract only cbg_next from the correlation
+        corr_matrix_cbg_next.append(patient_data[patientIdx].drop(labels=['5minute_intervals_timestamp','missing_cbg'],
+                                                                  axis=1).corr()[target + '_next'])
+        # all correlation matrix
+        corr_matrix = patient_data[patientIdx].drop(labels=['5minute_intervals_timestamp','missing_cbg'],
+                                                    axis=1).corr()
 
         # Display the correlation values
         if VISU_CORR:
@@ -187,6 +191,17 @@ def correlationMatrix(patient_data, prediction_horizon, target='cbg'):
                                              columns=[corr_matrix_cbg_next[1].keys()[-1]])
     print(f"Mean of all patient_data cbg_next correlation:")
     print(mean_corr_matrix_cbg_next)
+
+    # combine all correlation matrices in a list
+    corr_matrix_dataframe = pd.DataFrame(corr_matrix_cbg_next).drop(labels=['cbg_next'], axis=1)
+
+    # create a boxplot of the correlation values
+    corr_matrix_dataframe.plot(kind='box')
+    plt.xlabel('Correlation with ' + target + '_next')
+    plt.ylabel('Correlation value')
+    plt.title('Correlation of ' + target + '_next with other parameters')
+    plt.xticks(range(1, len(corr_matrix_dataframe.columns) + 1), corr_matrix_dataframe.columns)
+    plt.savefig('./correlation_matrix.png')
 
     return mean_corr_matrix_cbg_next
 
