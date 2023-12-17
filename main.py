@@ -27,7 +27,7 @@ PATIENT_TBD = 1  # change for different patients
 
 # Parameter changes
 k = 120  # Number of past BG values
-PH = 3  # Prediction horizon
+PH = 4  # Prediction horizon
 
 # folder naming:
 if MODEL:
