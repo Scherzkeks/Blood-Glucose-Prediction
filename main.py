@@ -15,14 +15,14 @@ import scipy as sp
 
 # -------------------- Coding ------------------------------------------------------------------------------------------
 
-VISU_PLOTS = True  # Visualization of Data ON/OFF
+VISU_PLOTS = False  # Visualization of Data ON/OFF
 VISU_CORR = False  # Visualization of Correlation matrices ON/OFF
 RUN_MODEL = True  # Model training and testing ON/OFF
 EVAL_MODEL = True  # Evaluation through loading model
 
 # TODO: change for different experiments
 MODEL = True  # True == RNN / False == SAN
-MODE = False  # True == Separately / False == generalized data
+MODE = True  # True == Separately / False == generalized data
 PATIENT_TBD = 1  # change for different patients
 
 # Parameter changes
@@ -41,6 +41,8 @@ else:
 
 folder = modelname + "_" + modename + "_k-" + str(k) + "_PH-" + str(PH) + "_patient-" + str(PATIENT_TBD)
 
+print(f"\n >>> Running now: {folder} <<<\n")
+
 # TODO: 2 models: RNN and ?
 #       5 prediction horizons
 #  2 experiments:
@@ -53,23 +55,34 @@ path = "Ohio Data"
 raw_train_data = []
 raw_test_data = []
 
-for year in os.listdir(path):
+fileHistory = []
+dataFolders = os.listdir(path)
+dataFolders.sort()
+for year in dataFolders:
+    fileHistory.append(year)
     train_path = os.path.join(path, year, "train")
     test_path = os.path.join(path, year, "test")
 
     for root, dirs, files in os.walk(train_path):
+        files.sort()
         for file in files:
+            fileHistory.append(file)
             if file.endswith('.csv'):  # Check if the file is a CSV file
                 file_path = os.path.join(root, file)  # full file path
                 data = pd.read_csv(file_path)
                 raw_train_data.append(data)
 
     for root, dirs, files in os.walk(test_path):
+        files.sort()
         for file in files:
+            fileHistory.append(file)
             if file.endswith('.csv'):  # Check if the file is a CSV file
                 file_path = os.path.join(root, file)  # full file path
                 data = pd.read_csv(file_path)
                 raw_test_data.append(data)
+
+print(f"\n >>> Printing file loading history {fileHistory}\n")
+
 
 # The following are the columns of the csv files:
 #   5minute_intervals_timestamp:    Timestamp in five-minute intervals
