@@ -17,7 +17,7 @@ import scipy as sp
 
 VISU_PLOTS = False  # Visualization of Data ON/OFF
 VISU_CORR = False  # Visualization of Correlation matrices ON/OFF
-RUN_MODEL = False  # Model training and testing ON/OFF
+RUN_MODEL = True  # Model training and testing ON/OFF
 EVAL_MODEL = True  # Evaluation through loading model
 
 # TODO: change for different experiments
@@ -82,15 +82,6 @@ for year in os.listdir(path):
 #   carbInput:                      Carbohydrate intake estimation
 #   bolus:                          Bolus insulin injection
 
-if VISU_PLOTS:
-    for i in range(len(raw_test_data)):
-        plt.subplot(3, 4, i+1)
-        plt.plot(raw_test_data[i]['cbg'])
-        plt.xlabel('Timestamps in 5 Minute Intervals')
-        plt.ylabel('CBG')
-        plt.title('CBG over Time'+str(i))
-    plt.show()
-
 
 def prepareData(patient_data, normalizeParam=None):
     print("Preparing data")
@@ -126,39 +117,42 @@ def prepareData(patient_data, normalizeParam=None):
     test_set = preparedData[12:]
 
     if VISU_PLOTS:
-        plt.figure()
+        figsize = (20*1.9*6.4/4.8, 20)
+        plt.figure(figsize=figsize)
         for idx in range(len(raw_train_set)):
             plt.subplot(3, 4, idx + 1)
-            plt.plot(raw_train_set[idx]['cbg'])
+            plt.plot(raw_train_set[idx]['cbg'][500:1500])
             plt.xlabel('Timestamps in 5 Minute Intervals')
             plt.ylabel('CBG')
             plt.title('TRAIN_SET: CBG over Time, patient' + str(idx))
+        plt.savefig('./img/raw_train_set_WINDOW.png')
 
-        plt.figure()
+        plt.figure(figsize=figsize)
         for idx in range(len(train_set)):
             plt.subplot(3, 4, idx + 1)
-            plt.plot(train_set[idx]['cbg'])
+            plt.plot(train_set[idx]['cbg'][500:1500])
             plt.xlabel('Timestamps in 5 Minute Intervals')
             plt.ylabel('CBG')
             plt.title('TRAIN_SET: Interpolated CBG over Time, patient' + str(idx))
+        plt.savefig('./img/train_set_WINDOW.png')
 
-        plt.figure()
+        plt.figure(figsize=figsize)
         for idx in range(len(raw_test_set)):
             plt.subplot(3, 4, idx + 1)
-            plt.plot(raw_test_set[idx]['cbg'])
+            plt.plot(raw_test_set[idx]['cbg'][500:1500])
             plt.xlabel('Timestamps in 5 Minute Intervals')
             plt.ylabel('CBG')
             plt.title('TEST_SET: CBG over Time, patient' + str(idx))
+        plt.savefig('./img/raw_test_set_WINDOW.png')
 
-        plt.figure()
+        plt.figure(figsize=figsize)
         for idx in range(len(test_set)):
             plt.subplot(3, 4, idx + 1)
-            plt.plot(test_set[idx]['cbg'])
+            plt.plot(test_set[idx]['cbg'][500:1500])
             plt.xlabel('Timestamps in 5 Minute Intervals')
             plt.ylabel('CBG')
             plt.title('TEST_SET: Interpolated CBG over Time, patient' + str(idx))
-
-        plt.show()
+        plt.savefig('./img/test_set_WINDOW.png')
 
     # split into train and test data set again
     return train_set, test_set, param_max
@@ -194,14 +188,14 @@ def correlationMatrix(patient_data, prediction_horizon, target='cbg'):
 
     # combine all correlation matrices in a list
     corr_matrix_dataframe = pd.DataFrame(corr_matrix_cbg_next).drop(labels=['cbg_next'], axis=1)
-
-    # create a boxplot of the correlation values
-    corr_matrix_dataframe.plot(kind='box')
-    plt.xlabel('Correlation with ' + target + '_next')
-    plt.ylabel('Correlation value')
-    plt.title('Correlation of ' + target + '_next with other parameters')
-    plt.xticks(range(1, len(corr_matrix_dataframe.columns) + 1), corr_matrix_dataframe.columns)
-    plt.savefig('./correlation_matrix.png')
+    if VISU_CORR:
+        # create a boxplot of the correlation values
+        corr_matrix_dataframe.plot(kind='box')
+        plt.xlabel('Correlation with ' + target + '_next')
+        plt.ylabel('Correlation value')
+        plt.title('Correlation of ' + target + '_next with other parameters')
+        plt.xticks(range(1, len(corr_matrix_dataframe.columns) + 1), corr_matrix_dataframe.columns)
+        plt.savefig('./img/correlation_matrix.png')
 
     return mean_corr_matrix_cbg_next
 
