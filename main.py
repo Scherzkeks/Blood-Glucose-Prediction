@@ -15,7 +15,7 @@ import scipy as sp
 
 # -------------------- Coding ------------------------------------------------------------------------------------------
 
-VISU_PLOTS = False  # Visualization of Data ON/OFF
+VISU_PLOTS = True  # Visualization of Data ON/OFF
 VISU_CORR = False  # Visualization of Correlation matrices ON/OFF
 RUN_MODEL = True  # Model training and testing ON/OFF
 EVAL_MODEL = True  # Evaluation through loading model
@@ -121,16 +121,16 @@ def prepareData(patient_data, normalizeParam=None):
         plt.figure(figsize=figsize)
         for idx in range(len(raw_train_set)):
             plt.subplot(3, 4, idx + 1)
-            plt.plot(raw_train_set[idx]['cbg'][500:1500])
+            plt.plot(raw_train_set[idx]['cbg'][500:1000])
             plt.xlabel('Timestamps in 5 Minute Intervals')
-            plt.ylabel('CBG')
+            plt.ylabel('CBG / mg/dL')
             plt.title('TRAIN_SET: CBG over Time, patient' + str(idx))
         plt.savefig('./img/raw_train_set_WINDOW.png')
 
         plt.figure(figsize=figsize)
         for idx in range(len(train_set)):
             plt.subplot(3, 4, idx + 1)
-            plt.plot(train_set[idx]['cbg'][500:1500])
+            plt.plot(train_set[idx]['cbg'][500:1000])
             plt.xlabel('Timestamps in 5 Minute Intervals')
             plt.ylabel('CBG')
             plt.title('TRAIN_SET: Interpolated CBG over Time, patient' + str(idx))
@@ -139,16 +139,16 @@ def prepareData(patient_data, normalizeParam=None):
         plt.figure(figsize=figsize)
         for idx in range(len(raw_test_set)):
             plt.subplot(3, 4, idx + 1)
-            plt.plot(raw_test_set[idx]['cbg'][500:1500])
+            plt.plot(raw_test_set[idx]['cbg'][500:1000])
             plt.xlabel('Timestamps in 5 Minute Intervals')
-            plt.ylabel('CBG')
+            plt.ylabel('CBG / mg/dL')
             plt.title('TEST_SET: CBG over Time, patient' + str(idx))
         plt.savefig('./img/raw_test_set_WINDOW.png')
 
         plt.figure(figsize=figsize)
         for idx in range(len(test_set)):
             plt.subplot(3, 4, idx + 1)
-            plt.plot(test_set[idx]['cbg'][500:1500])
+            plt.plot(test_set[idx]['cbg'][500:1000])
             plt.xlabel('Timestamps in 5 Minute Intervals')
             plt.ylabel('CBG')
             plt.title('TEST_SET: Interpolated CBG over Time, patient' + str(idx))
@@ -241,7 +241,7 @@ def sequences(patient_data, window, horizon, X, Y):
 # prepare data
 train_data, test_data, param_max = prepareData(raw_train_data + raw_test_data)
 
-# create correlation matrxi
+# create correlation matrix
 correlationMatrix(train_data, PH)
 
 # initialize lists
