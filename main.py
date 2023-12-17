@@ -22,7 +22,7 @@ EVAL_MODEL = True  # Evaluation through loading model
 
 # TODO: change for different experiments
 MODEL = True  # True == RNN / False == SAN
-MODE = True  # True == Separately / False == generalized data
+MODE = False  # True == Separately / False == generalized data
 PATIENT_TBD = 1  # change for different patients
 
 # Parameter changes
@@ -242,18 +242,20 @@ train_data, test_data, param_max = prepareData(raw_train_data + raw_test_data)
 
 correlationMatrix(train_data, PH)
 
-X = []
-Y = []
+X_train = []
+X_test = []
+Y_train = []
+Y_test = []
 
 if MODE:  # separately
-    X_train, Y_train = sequences(train_data[PATIENT_TBD], k, PH, X, Y)
-    X_test, Y_test = sequences(test_data[PATIENT_TBD], k, PH, X, Y)
+    X_train, Y_train = sequences(train_data[PATIENT_TBD], k, PH, X_train, Y_train)
+    X_test, Y_test = sequences(test_data[PATIENT_TBD], k, PH, X_test, Y_test)
 else:  # generalized
     for patient in range(len(train_data)):
         if patient == PATIENT_TBD:
-            X_test, Y_test = sequences(test_data[patient], k, PH, X, Y)
+            X_test, Y_test = sequences(test_data[patient], k, PH, X_test, Y_test)
         else:
-            X_train, Y_train = sequences(train_data[patient], k, PH, X, Y)
+            X_train, Y_train = sequences(train_data[patient], k, PH, X_train, Y_train)
 
 # Reshaping
 X_train = X_train.reshape(-1, k, 4)
