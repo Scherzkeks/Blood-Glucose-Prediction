@@ -235,13 +235,16 @@ def sequences(patient_data, window, horizon, X, Y):
         bolus = patient_data['bolus'].values[idx:idx + window]
         X.append([cbg, basal, carb, bolus])
         Y.append(patient_data['cbg'].values[idx + window - 1 + horizon])
-    return [np.array(X), np.array(Y)]
+    return X, Y
 
 
+# prepare data
 train_data, test_data, param_max = prepareData(raw_train_data + raw_test_data)
 
+# create correlation matrxi
 correlationMatrix(train_data, PH)
 
+# initialize lists
 X_train = []
 X_test = []
 Y_train = []
@@ -258,10 +261,10 @@ else:  # generalized
             X_train, Y_train = sequences(train_data[patient], k, PH, X_train, Y_train)
 
 # Reshaping
-X_train = X_train.reshape(-1, k, 4)
-X_test = X_test.reshape(-1, k, 4)
-Y_train = Y_train.reshape(-1, 1)
-Y_test = Y_test.reshape(-1, 1)
+X_train = np.array(X_train).reshape(-1, k, 4)
+X_test = np.array(X_test).reshape(-1, k, 4)
+Y_train = np.array(Y_train).reshape(-1, 1)
+Y_test = np.array(Y_test).reshape(-1, 1)
 
 if MODEL:
     # Creating the RNN model
