@@ -439,9 +439,9 @@ if EVAL_MODEL:
 
     # Plot (absolute) differences between prediction and ground-truth (backtransformed)
     plt.figure()
-    plt.plot(diff, label='Differences')
-    plt.plot(abs(diff), label='Absolute Differences')
-    plt.axhline(np.sum(abs(diff)) / len(diff), color='r', linestyle='--', label='Mean absolute difference')
+    plt.plot(backtrs_diff, label='Differences')
+    plt.plot(abs(backtrs_diff), label='Absolute Differences')
+    plt.axhline(np.sum(abs(backtrs_diff)) / len(backtrs_diff), color='r', linestyle='--', label='Mean absolute difference')
     plt.title(f'Difference prediction and ground-truth\n ({folder})')
     plt.xlim(1000, 2000)
     plt.xlabel('Timestamps in 5 Minute Intervals')
