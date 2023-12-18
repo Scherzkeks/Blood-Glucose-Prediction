@@ -16,7 +16,7 @@ import scipy as sp
 # -------------------- Coding ------------------------------------------------------------------------------------------
 
 VISU_PLOTS = False  # Visualization of Data ON/OFF
-VISU_CORR = False  # Visualization of Correlation matrices ON/OFF
+VISU_CORR = True  # Visualization of Correlation matrices ON/OFF
 RUN_MODEL = True  # Model training and testing ON/OFF
 EVAL_MODEL = True  # Evaluation through loading model
 
@@ -206,9 +206,9 @@ def correlationMatrix(patient_data, prediction_horizon, target='cbg'):
         corr_matrix_dataframe.plot(kind='box')
         plt.xlabel('Correlation with ' + target + '_next')
         plt.ylabel('Correlation value')
-        plt.title(f"Correlation of ' + target + '_next with other parameters\n({folder})")
+        plt.title('Correlation of ' + target + f"_next (stepsize:{prediction_horizon}) with other parameters ")
         plt.xticks(range(1, len(corr_matrix_dataframe.columns) + 1), corr_matrix_dataframe.columns)
-        plt.savefig(f"./trained/{folder}/correlation_matrix.png")
+        plt.savefig(f"./img/correlation_matrix_stepOfNext_{prediction_horizon}.png")
 
     return mean_corr_matrix_cbg_next
 
@@ -255,7 +255,8 @@ def sequences(patient_data, window, horizon, X, Y):
 train_data, test_data, param_max = prepareData(raw_train_data + raw_test_data)
 
 # create correlation matrix
-correlationMatrix(train_data, PH)
+correlationMatrix(train_data, PH)  # with future cbg
+correlationMatrix(train_data, 0)  # with current cbg
 
 # initialize lists
 X_train = []
