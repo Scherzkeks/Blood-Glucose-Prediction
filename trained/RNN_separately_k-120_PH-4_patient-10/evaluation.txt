@@ -1,1 +1,1 @@
-Mean Squared Error (MSE): 0.0054
+Mean Squared Error (MSE): 0.0035
