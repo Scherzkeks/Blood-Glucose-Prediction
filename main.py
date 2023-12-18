@@ -206,9 +206,9 @@ def correlationMatrix(patient_data, prediction_horizon, target='cbg'):
         corr_matrix_dataframe.plot(kind='box')
         plt.xlabel('Correlation with ' + target + '_next')
         plt.ylabel('Correlation value')
-        plt.title('Correlation of ' + target + '_next with other parameters')
+        plt.title(f"Correlation of ' + target + '_next with other parameters\n({folder})")
         plt.xticks(range(1, len(corr_matrix_dataframe.columns) + 1), corr_matrix_dataframe.columns)
-        plt.savefig('./img/correlation_matrix.png')
+        plt.savefig(f"./trained/{folder}/correlation_matrix.png")
 
     return mean_corr_matrix_cbg_next
 
