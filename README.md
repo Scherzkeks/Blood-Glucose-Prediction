@@ -11,7 +11,7 @@ Hello world!
     1. Choose whether the corresponding model should be evaluated or not.
     2. This can be used to load a previously created model.
 5. MODEL = True / False
-    1. Choose what model you want to train True == RAN / False == SAN.
+    1. Choose what model you want to train True == RNN / False == SAN.
 6. MODE = True / False
     1. Choose which mode should be trained: True == Separately / False == Generalized.
 7. PATIENT_TBD = (int)
@@ -37,7 +37,7 @@ Hello world!
 
 ### Disclaimer
 
-We hereby confirm, that no form of AI has been used for the creation, writing and correction of either the code, of the report, or any other part of the project.
+We hereby confirm, that no form of AI has been used for the creation, writing and correction of either the code or of the report.
 
 
 
