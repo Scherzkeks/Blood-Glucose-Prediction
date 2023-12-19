@@ -16,7 +16,7 @@ import scipy as sp
 # -------------------- Coding ------------------------------------------------------------------------------------------
 
 VISU_PLOTS = False  # Visualization of Data ON/OFF
-VISU_CORR = True  # Visualization of Correlation matrices ON/OFF
+VISU_CORR = False  # Visualization of Correlation matrices ON/OFF
 RUN_MODEL = True  # Model training and testing ON/OFF
 EVAL_MODEL = True  # Evaluation through loading model
 
@@ -26,7 +26,7 @@ MODE = True  # True == Separately / False == generalized data
 PATIENT_TBD = 1  # change for different patients
 
 # Parameter changes
-k = 120  # Number of past BG values
+k = 72  # Number of past BG values
 PH = 4  # Prediction horizon
 
 # folder naming:
@@ -42,12 +42,6 @@ else:
 folder = modelname + "_" + modename + "_k-" + str(k) + "_PH-" + str(PH) + "_patient-" + str(PATIENT_TBD)
 
 print(f"\n >>> Running now: {folder} <<<\n")
-
-# TODO: 2 models: RNN and ?
-#       5 prediction horizons
-#  2 experiments:
-#  patient separately => 12 models
-#  all together generalized (without test patient) => 12 models
 
 # Load Data
 path = "Ohio Data"
@@ -98,6 +92,7 @@ print(f"\n >>> Printing file loading history {fileHistory}\n")
 
 def prepareData(patient_data, normalizeParam=None):
     print("Preparing data")
+
     if normalizeParam is None:
         normalizeParam = ['cbg', 'finger', 'basal', 'hr', 'gsr', 'carbInput', 'bolus']
 
