@@ -1,5 +1,8 @@
 # Blood-Glucose-Prediction
 Hello world!
+This project is based on the prediction of blood glucose for patients with type 1 diabetes using deep learning. A Recurrent Neural Network (RNN) and a Self-Acting Neural network (SAN) models were used. The OhioT1DM dataset containing data of 12 patients was used for training and testing the models. 
+
+
 ## How to run our experiments?
 1. VISU_PLOTS = True / False
     1. Choose whether plots of raw and prepared data should be created and saved.
